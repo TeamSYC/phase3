@@ -12,7 +12,7 @@ def main(argv):
 		dtime = decoded["created_at"]
 		dt_obj = datetime.strptime(dtime, '%a %b %d %H:%M:%S +%f %Y')
 		dtime = dt_obj.strftime('%Y-%m-%d+%H:%M:%S')
-		print dtime + "\t" + decoded["id_str"] + ":" + decoded["text"]
+		print dtime + "\t" + decoded["id_str"] + ":" + decoded["text"].decode('utf8')
 
 if __name__ == "__main__":
 	main(sys.argv)
