@@ -7,7 +7,7 @@ from datetime import datetime
 def main(argv):
 	for line in sys.stdin:
 		decoded = json.loads(line)
-		if not 'place' in decoded or not 'name' in decoded['place']:
+		if not 'place' in decoded or not decoded['place'] or not 'name' in decoded['place']:
 			continue
 		place = decoded['place']['name'].strip()
 		if len(place) < 2 or len(place.split()) > 3:
