@@ -28,8 +28,11 @@ def main(argv):
 				# remove duplicate and alphabetically sort by str length
 				order_dict = collections.OrderedDict(sorted(id_text_dict.items()))
 				res = ""
+				print_res = ""
 				for key in order_dict:
 					res = res + key + ":" + id_text_dict[key] + "\n"
+					print_res = print_res + key + ":" + id_text_dict[key] + "_"
+				print current_dtime + "," + print_res
 				range_key = 't' 
 				table.put(dtime,{range_key:res})
 
@@ -42,8 +45,11 @@ def main(argv):
 		# remove duplicate and alphabetically sort by str length
 		order_dict = collections.OrderedDict(sorted(id_text_dict.items()))
 		res = ""
+		print_res = ""
 		for key in order_dict:
 			res = res + key + ":" + id_text_dict[key] + "\n"
+			print_res = print_res + key + ":" + id_text_dict[key] + "_"
+		print current_dtime + "," + print_res
 		range_key = 't' 
 		table.put(dtime,{range_key:res})
 
