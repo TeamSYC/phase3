@@ -14,6 +14,7 @@ def main(argv):
 
 		# parse the input we got from mapper.py
 		user_time, res = line.split(',', 1)
+		res.replace = ('_','\n')
 		table.put(user_time,{'t':res})
 
 	connection.close()
