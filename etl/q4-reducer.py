@@ -3,6 +3,7 @@ import sys
 import re
 import collections
 import happybase
+import ast
 
 def main(argv):
 	current_dtime = None
@@ -20,6 +21,7 @@ def main(argv):
 		# parse the input we got from mapper.py
 		dtime, id_text = line.split('\t', 1)
 		id_str, text = id_text.split(':', 1)
+		text = ast.literal_eval(text)
 
 		if dtime == current_dtime:
 			id_text_dict[id_str] = text;
