@@ -17,15 +17,9 @@ def main(argv):
 		place = decoded['place']['name'].strip()
 		if len(place) < 2 or len(place.split()) > 3:
 			continue
-		# For valid place, replace whitespace with +.
-		place = place.replace(' ', '+')
-
-		dtime = decoded['created_at']
-		dt_obj = datetime.strptime(dtime, '%a %b %d %H:%M:%S +%f %Y')
-		dtime = dt_obj.strftime('%Y-%m-%d+%H:%M:%S')
 
 		try:
-			print place + "_" + dtime + "\t" + decoded['id_str']
+			print place + "\t" + "1"
 		except UnicodeEncodeError:
 			continue
 
