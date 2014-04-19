@@ -15,7 +15,7 @@ def main(argv):
 		# parse the input we got from mapper.py
 		place_time, res = line.split(',', 1)
 		place, time = place_time.split('_', 1)
-		res.replace = ('_','\n')
+		res.replace('_','\n')
 
 		key = 't:'+time
 		table.put(place,{key:res})

@@ -14,7 +14,7 @@ def main(argv):
 
 		# parse the input we got from mapper.py
 		current_user, res = line.split(',', 1)
-		res.replace = ('_','\n')
+		res.replace('_','\n')
 
 		table.put(current_user,{'r':res})
 

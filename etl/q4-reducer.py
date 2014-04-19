@@ -1,7 +1,8 @@
 #!/usr/bin/python 
 import sys
 import re
-import collections
+#import collections - only works in python 2.7+
+import ordereddict
 import happybase
 import ast
 
@@ -10,8 +11,8 @@ def main(argv):
 	id_text_dict = {}
 	dtime = None
 
-	connection = happybase.Connection('ec2-54-85-185-35.compute-1.amazonaws.com')
-	table = connection.table('tweets_q4')
+	connection = happybase.Connection('ec2-54-86-20-121.compute-1.amazonaws.com')
+	table = connection.table('q4')
 
 	# input comes from STDIN
 	for line in sys.stdin:
@@ -28,12 +29,12 @@ def main(argv):
 		else:
 			if current_dtime:
 				# remove duplicate and alphabetically sort by str length
-				order_dict = collections.OrderedDict(sorted(id_text_dict.items()))
+				order_dict = ordereddict.OrderedDict(sorted(id_text_dict.items()))
 				res = ""
 				print_res = ""
 				for key in order_dict:
 					res = res + key + ":" + id_text_dict[key] + "\n"
-					print_res = print_res + key + ":" + id_text_dict[key] + "_"
+					print_res = print_res + key + ":" + id_text_dict[key] + "<}"
 				print current_dtime + "," + print_res
 				range_key = 't' 
 				table.put(dtime,{range_key:res})
@@ -45,12 +46,12 @@ def main(argv):
 	# the last one
 	if current_dtime == dtime:
 		# remove duplicate and alphabetically sort by str length
-		order_dict = collections.OrderedDict(sorted(id_text_dict.items()))
+		order_dict = ordereddict.OrderedDict(sorted(id_text_dict.items()))
 		res = ""
 		print_res = ""
 		for key in order_dict:
 			res = res + key + ":" + id_text_dict[key] + "\n"
-			print_res = print_res + key + ":" + id_text_dict[key] + "_"
+			print_res = print_res + key + ":" + id_text_dict[key] + "<}"
 		print current_dtime + "," + print_res
 		range_key = 't' 
 		table.put(dtime,{range_key:res})

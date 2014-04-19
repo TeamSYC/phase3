@@ -2,6 +2,7 @@
 import sys
 import os
 import json
+import re
 from datetime import datetime
 
 def main(argv):
@@ -15,7 +16,7 @@ def main(argv):
 		# Remove all excess whitespace, and filter out places whose names are less than 2
 		# characters long or are more than 3 words long.
 		place = decoded['place']['name'].strip()
-		if len(place) < 2 or len(place.split()) > 3:
+		if len(place) < 2 or len(place.split()) > 3 or re.match(r'^[A-Za-z ]', place):
 			continue
 
 		try:
