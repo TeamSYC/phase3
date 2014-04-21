@@ -19,11 +19,10 @@ public class Q5Mapper extends Mapper<LongWritable, Text, Text, Text> {
 
 	private String sanitize(String input) {
 	    String[] str = input.replaceAll("[^a-zA-Z]", " ").split("\\s+");
-	    String result = "";
+	    String result = " ";
 	    for (String token : str) {
-		result += token.trim() + " ";
+		  result += token.trim() + " ";
 	    }
-	    result = result.trim();
 	    return result;
 	}
 
@@ -45,9 +44,8 @@ public class Q5Mapper extends Mapper<LongWritable, Text, Text, Text> {
 		}
 
 		for (String p : places) {
-			int index = text.indexOf(p);
-			if (index != -1) {
-				String key = text.substring(index, index+p.length()) + "_" + timestamp;
+			if (text.matches(".*\\s" + p + "\\s.*")) {
+				String key = p + "_" + timestamp;
 				context.write(new Text(key), new Text(tweetId));
 			}
 		}

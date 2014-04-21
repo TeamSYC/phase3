@@ -15,7 +15,6 @@ import io.undertow.util.Headers;
 
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
@@ -24,13 +23,17 @@ import org.apache.hadoop.hbase.client.HTablePool;
 import org.apache.hadoop.hbase.client.HTableInterface;
 
 public class Home {
-	private final static int NUM_CONNECTIONS = 90;
+	private final static int NUM_CONNECTIONS = 80;
 	private static HTablePool pool;
 	private static HTableInterface q2;
 	private static HTableInterface q3;
 	private static HTableInterface q4;
 	private static HTableInterface q5;
 	private static HTableInterface q6;
+	private final byte[] T = Bytes.toBytes("t");
+	private final byte[] R = Bytes.toBytes("r");
+	private final byte[] C = Bytes.toBytes("c");
+	private final byte[] EMPTY = Bytes.toBytes("");
 
 	public Home() {
 		try {
@@ -45,15 +48,15 @@ public class Home {
 		}
 	}
 	
-	public String getQ2(String userid, String timestamp) {		
-		Get g = new Get(Bytes.toBytes(userid));
+	public String getQ2(String userid, String timestamp) {	
+		Get g = new Get(Bytes.toBytes(userid + "_" + timestamp));
 		Result r = null;
 		try {
 			r = q2.get(g);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		byte[] value = r.getValue(Bytes.toBytes("t"), Bytes.toBytes(""));
+		byte[] value = r.getValue(T, EMPTY);
 		return Bytes.toString(value).replaceAll("_", "\n"); 
 	}
 
@@ -65,7 +68,7 @@ public class Home {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		byte[] value = r.getValue(Bytes.toBytes("r"), Bytes.toBytes(""));
+		byte[] value = r.getValue(R, EMPTY);
 		return Bytes.toString(value).replaceAll("_", "\n"); 
 	}
 	
@@ -77,19 +80,20 @@ public class Home {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		byte[] value = r.getValue(Bytes.toBytes("t"), Bytes.toBytes(""));
+		byte[] value = r.getValue(T, EMPTY);
 		return Bytes.toString(value);
 	}
 	
 	public String getQ5(String start, String end) {
-		Scan scan = new Scan(Bytes.toBytes(start), Bytes.toBytes(end));
+		byte[] origEnd = Bytes.toBytes(end);
+		Scan scan = new Scan(Bytes.toBytes(start), Arrays.copyOf(origEnd, origEnd.length+1));
 		ResultScanner r = null;
 		Result res = null;
-		String result = null;
+		String result = "";
 		try {
 			r = q5.getScanner(scan);
 			while ((res = r.next()) != null) {
-				result += ByteBuffer.wrap(res.getValue(Bytes.toBytes("t"), Bytes.toBytes("")));
+				result += Bytes.toString(res.getValue(T, EMPTY));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -98,19 +102,29 @@ public class Home {
 	}
 	
 	public String getQ6(String min, String max) {
-		long sum = 0L;
-		Scan scan = new Scan(Bytes.toBytes(min), Bytes.toBytes(max));
-		ResultScanner r = null;
-		Result res = null;
+		Scan scan1 = new Scan(Bytes.toBytes(min));
+		Scan scan2 = new Scan(Bytes.toBytes(max));
+		scan1.setBatch(1);
+		scan2.setBatch(1);	
+		//scan1.setCacheBlocks(true);
+		//scan2.setCacheBlocks(true);
+		
+		ResultScanner minScanner = null;
+		ResultScanner maxScanner = null;
+		long result = 0L;
 		try {
-			r = q6.getScanner(scan);
-			while ((res = r.next()) != null) {
-				sum += ByteBuffer.wrap(res.getValue(Bytes.toBytes("c"), Bytes.toBytes(""))).getLong();
-			}
+			minScanner = q6.getScanner(scan1);
+			maxScanner = q6.getScanner(scan2);
+			Result minRow = minScanner.next();
+			Result maxRow = maxScanner.next();
+			result = Long.parseLong(Bytes.toString(maxRow.getValue(C, EMPTY)))
+					- Long.parseLong(Bytes.toString(minRow.getValue(C, EMPTY)));
+			minScanner.close();
+			maxScanner.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return ""+sum;
+		return result+"\n";
 	}
 
 	public static void main(String[] args) {
@@ -131,7 +145,7 @@ public class Home {
 				char path = exchange.getRequestPath().charAt(2);
 				String result = null;
 				Map<String,Deque<String>> queryMap = null;
-				exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+				exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain; charset=utf-8");
 				
 				switch (path) {
 				case '1':
@@ -179,8 +193,11 @@ public class Home {
 					
 				case '6':
 					queryMap = exchange.getQueryParameters();
-					result = home.getQ6(queryMap.get("userid_min").getFirst().trim(),
-							queryMap.get("userid_max").getFirst().trim());
+					String min = String.format("%010d", Long.parseLong(
+							queryMap.get("userid_min").getFirst().trim()));
+					String max = String.format("%010d", Long.parseLong(
+							queryMap.get("userid_max").getFirst().trim())+1);
+					result = home.getQ6(min, max);
 					exchange.getResponseSender().send(ByteBuffer.wrap(
 							info.concat(result).getBytes(utf8)
 							), IoCallback.END_EXCHANGE);

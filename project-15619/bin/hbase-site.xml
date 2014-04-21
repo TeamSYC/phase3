@@ -3,8 +3,8 @@
 <configuration>
   <property><name>fs.hdfs.impl</name><value>emr.hbase.fs.BlockableFileSystem</value></property>
   <property><name>hbase.regionserver.handler.count</name><value>100</value></property>
-  <property><name>hbase.zookeeper.quorum</name><value>54.86.20.121</value></property>
-  <property><name>hbase.rootdir</name><value>hdfs://54.86.20.121:9000/hbase</value></property>
+  <property><name>hbase.zookeeper.quorum</name><value>54.86.77.90</value></property>
+  <property><name>hbase.rootdir</name><value>hdfs://54.86.77.90:9000/hbase</value></property>
   <property><name>hbase.cluster.distributed</name><value>true</value></property>
   <property><name>hbase.tmp.dir</name><value>/mnt/var/lib/hbase/tmp-data</value></property>
 </configuration>
