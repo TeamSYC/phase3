@@ -81,5 +81,6 @@
 	<classpathentry kind="lib" path="lib/snappy-java-1.0.3.2.jar"/>
 	<classpathentry kind="lib" path="lib/stax-api-1.0.1.jar"/>
 	<classpathentry kind="lib" path="lib/velocity-1.7.jar"/>
+	<classpathentry kind="lib" path="lib/concurrentlinkedhashmap-lru-1.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
