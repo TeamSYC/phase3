@@ -1,8 +1,6 @@
 package base;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
@@ -33,9 +31,10 @@ public class Home {
 	private static HTableInterface q5;
 	private static HTableInterface q6;
 	private final byte[] T = Bytes.toBytes("t");
-	private final byte[] R = Bytes.toBytes("r");
 	private final byte[] C = Bytes.toBytes("c");
 	private final byte[] EMPTY = Bytes.toBytes("");
+	private static long[] key = new long[19633663];
+	private static long[] content = new long[19633663];
 	private ConcurrentMap<String, String> cache3;
 
 	public Home() throws Exception {
@@ -43,12 +42,38 @@ public class Home {
 				.maximumWeightedCapacity(3000000)
 				.build();
 		warmUpCache();
+		buildTree();
 		pool = new HTablePool(HBaseConfiguration.create(), NUM_CONNECTIONS);
 		q2 = pool.getTable(Bytes.toBytes("q2"));
 		q3 = pool.getTable(Bytes.toBytes("q3"));
 		q4 = pool.getTable(Bytes.toBytes("q4"));
 		q5 = pool.getTable(Bytes.toBytes("q5"));
 		q6 = pool.getTable(Bytes.toBytes("q6"));
+	}
+
+	public void buildTree() {
+		System.out.println("Tree is building.....");
+
+		int linenum  = 0;
+		String filename = "q6_new";
+		try {
+			BufferedReader br = new BufferedReader(new FileReader("q6/" + filename));
+			String line;
+			while ((line = br.readLine()) != null) {
+				String[] part = line.split(",");
+				key[linenum] = Long.parseLong(part[0]);
+				content[linenum] = Long.parseLong(part[1]);
+				linenum ++;
+			}
+			br.close();
+
+			System.out.println("Tree Building is finished !!! ");
+		} catch(Exception e) {
+			e.printStackTrace();
+			return;
+		}
+		System.out.println("line_num is " + linenum);
+
 	}
 
 	public void warmUpCache() {
@@ -71,7 +96,6 @@ public class Home {
 				return;
 			}
 		}
-
 		System.out.println("q3 warm up get finished!!!");
 		System.out.println("line_num is " + linenum);
 	}
@@ -87,14 +111,15 @@ public class Home {
 		}
 		Get g = new Get(Bytes.toBytes(userid));
 		Result r =  q3.get(g);
-		String result = Bytes.toString(r.getValue(R, EMPTY));
+		String result = Bytes.toString(r.getValue(T, EMPTY));
 		cache3.put(userid, result);
 		return result;
 	}
 
 	public String getQ4(String time) throws Exception {
 		Get g = new Get(Bytes.toBytes(time));
-		return Bytes.toString(q4.get(g).getValue(T, EMPTY));
+		String result = Bytes.toString(q4.get(g).getValue(T, EMPTY));
+		return result;
 	}
 
 	public String getQ5(String start, String end) throws Exception {
@@ -113,8 +138,20 @@ public class Home {
 	public String getQ6(String min, String max) throws Exception {
 		if (max.compareTo(min) < 0 || min.compareTo("0000000016") < 0 
 				|| max.compareTo("2427052445") > 0) {
-			return null;
+			return "0\n";
 		}
+
+		int index1 = Arrays.binarySearch(key, Long.parseLong(min));
+		int index2 = Arrays.binarySearch(key, Long.parseLong(max));
+		if (index1 < 0) {
+			index1 = -index1 - 1;
+		}
+		if (index2 < 0) {
+			index2 = -index2 - 1;
+		}
+
+		return "" + (content[index2] - content[index1]) + "\n";
+		/*
 		Scan scan1 = new Scan(Bytes.toBytes(min));
 		Scan scan2 = new Scan(Bytes.toBytes(max));
 		scan1.setBatch(1);
@@ -133,6 +170,16 @@ public class Home {
 		minScanner.close();
 		maxScanner.close();
 		return result+"\n";
+		 */
+	}
+
+	public boolean validateDate(String date) {
+		return date.substring(0,4).equals("2014") && 
+				date.substring(5,7).compareTo("01") >= 0 && date.substring(5,7).compareTo("03") <= 0 
+				&& date.substring(8,10).compareTo("01") >= 0 && date.substring(8,10).compareTo("31") <= 0
+				&& date.substring(11,13).compareTo("00") >= 0 && date.substring(11,13).compareTo("23") <= 0
+				&& date.substring(14,16).compareTo("00") >= 0 && date.substring(14,16).compareTo("59") <= 0
+				&& date.substring(17,19).compareTo("00") >= 0 && date.substring(17,19).compareTo("59") <= 0;
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -140,7 +187,7 @@ public class Home {
 		final SimpleDateFormat fmt = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss");
 		final Charset utf8 = Charset.forName("UTF-8");
 		final Home home = new Home();
-
+		
 		Undertow.builder()
 		.setWorkerThreads(4096)
 		.setIoThreads(Runtime.getRuntime().availableProcessors() * 2)
@@ -164,10 +211,10 @@ public class Home {
 
 				case '2':
 					queryMap = exchange.getQueryParameters();
-					result = home.getQ2(queryMap.get("userid").getFirst() + "_" +
-							queryMap.get("tweet_time").getFirst().replaceAll(" ", "+"));
 					exchange.getResponseSender().send(ByteBuffer.wrap(
-							info.concat(result).getBytes(utf8)
+							info.concat(home.getQ2(queryMap.get("userid").getFirst() + "_" 
+									+ queryMap.get("tweet_time").getFirst().replaceAll(" ", "+"))
+									).getBytes(utf8)
 							), IoCallback.END_EXCHANGE);
 					break;
 
@@ -181,7 +228,14 @@ public class Home {
 
 				case '4':
 					queryMap = exchange.getQueryParameters();
-					result = home.getQ4(queryMap.get("time").getFirst().replaceAll(" ", "+"));
+					String t4 = queryMap.get("time").getFirst().replaceAll(" ", "+");
+					if (!home.validateDate(t4)) {
+						exchange.getResponseSender().send(ByteBuffer.wrap(
+								info.getBytes(utf8)
+								), IoCallback.END_EXCHANGE);
+						break;
+					}
+					result = home.getQ4(t4);
 					exchange.getResponseSender().send(ByteBuffer.wrap(
 							info.concat(result).getBytes(utf8)
 							), IoCallback.END_EXCHANGE);
@@ -192,6 +246,12 @@ public class Home {
 					String place = queryMap.get("place").getFirst();
 					String startTime = queryMap.get("start_time").getFirst().replaceAll(" ", "+");
 					String endTime = queryMap.get("end_time").getFirst().replaceAll(" ", "+");
+					if (!home.validateDate(startTime) || !home.validateDate(endTime)) {
+						exchange.getResponseSender().send(ByteBuffer.wrap(
+								info.getBytes(utf8)
+								), IoCallback.END_EXCHANGE);
+						break;
+					}
 					result = home.getQ5(place + "_" + startTime,
 							place + "_" + endTime);
 					exchange.getResponseSender().send(ByteBuffer.wrap(
