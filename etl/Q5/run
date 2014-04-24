@@ -1,0 +1,2 @@
+hadoop fs -rmr Output
+hadoop jar q5.jar Q5

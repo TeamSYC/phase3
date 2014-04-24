@@ -1,0 +1,3 @@
+#!/bin/sh
+
+javac -classpath ${HADOOP_HOME}/hadoop-core.jar:${HADOOP_HOME}/Q5/gson-2.2.4.jar -d classes Q5Driver.java Q5Mapper.java Q5Reducer.java

@@ -44,7 +44,8 @@ public class Q5Mapper extends Mapper<LongWritable, Text, Text, Text> {
 		}
 
 		for (String p : places) {
-			if (text.matches(".*\\s" + p + "\\s.*")) {
+			int index = text.indexOf(" " + p + " ");
+			if (index >= 0) {
 				String key = p + "_" + timestamp;
 				context.write(new Text(key), new Text(tweetId));
 			}
