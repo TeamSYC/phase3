@@ -1,6 +1,5 @@
 package base;
 
-import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
@@ -33,71 +32,18 @@ public class Home {
 	private final byte[] T = Bytes.toBytes("t");
 	private final byte[] C = Bytes.toBytes("c");
 	private final byte[] EMPTY = Bytes.toBytes("");
-	private static long[] key = new long[19633663];
-	private static long[] content = new long[19633663];
 	private ConcurrentMap<String, String> cache3;
 
 	public Home() throws Exception {
 		cache3 = new ConcurrentLinkedHashMap.Builder<String, String>()
 				.maximumWeightedCapacity(3000000)
 				.build();
-		warmUpCache();
-		buildTree();
 		pool = new HTablePool(HBaseConfiguration.create(), NUM_CONNECTIONS);
 		q2 = pool.getTable(Bytes.toBytes("q2"));
 		q3 = pool.getTable(Bytes.toBytes("q3"));
 		q4 = pool.getTable(Bytes.toBytes("q4"));
 		q5 = pool.getTable(Bytes.toBytes("q5"));
 		q6 = pool.getTable(Bytes.toBytes("q6"));
-	}
-
-	public void buildTree() {
-		System.out.println("Tree is building.....");
-
-		int linenum  = 0;
-		String filename = "q6_new";
-		try {
-			BufferedReader br = new BufferedReader(new FileReader("q6/" + filename));
-			String line;
-			while ((line = br.readLine()) != null) {
-				String[] part = line.split(",");
-				key[linenum] = Long.parseLong(part[0]);
-				content[linenum] = Long.parseLong(part[1]);
-				linenum ++;
-			}
-			br.close();
-
-			System.out.println("Tree Building is finished !!! ");
-		} catch(Exception e) {
-			e.printStackTrace();
-			return;
-		}
-		System.out.println("line_num is " + linenum);
-
-	}
-
-	public void warmUpCache() {
-		System.out.println("warm up get started!!!");
-		long linenum = 0;
-		for(int i = 0 ; i <= 55; i++) {
-			String filename = "part-000" + String.format("%02d",i);
-			try {
-				BufferedReader br = new BufferedReader(new FileReader("/home/ubuntu/q3/" + filename));
-				String line;
-				while ((line = br.readLine()) != null) {
-					String[] part = line.split(",");
-					cache3.put(part[0], part[1].trim().replaceAll("_", "\n"));
-					linenum ++;
-				}
-				br.close();
-				System.out.println(filename + " is done!!!!!!");
-			} catch(Exception e) {
-				e.printStackTrace();
-				return;
-			}
-		}
-		System.out.println("q3 warm up get finished!!!");
-		System.out.println("line_num is " + linenum);
 	}
 
 	public String getQ2(String key) throws Exception {
@@ -135,23 +81,7 @@ public class Home {
 		return result;
 	}
 
-	public String getQ6(String min, String max) throws Exception {
-		if (max.compareTo(min) < 0 || min.compareTo("0000000016") < 0 
-				|| max.compareTo("2427052445") > 0) {
-			return "0\n";
-		}
-
-		int index1 = Arrays.binarySearch(key, Long.parseLong(min));
-		int index2 = Arrays.binarySearch(key, Long.parseLong(max));
-		if (index1 < 0) {
-			index1 = -index1 - 1;
-		}
-		if (index2 < 0) {
-			index2 = -index2 - 1;
-		}
-
-		return "" + (content[index2] - content[index1]) + "\n";
-		/*
+	public String getQ6(String min, String max) throws Exception {		
 		Scan scan1 = new Scan(Bytes.toBytes(min));
 		Scan scan2 = new Scan(Bytes.toBytes(max));
 		scan1.setBatch(1);
@@ -170,7 +100,6 @@ public class Home {
 		minScanner.close();
 		maxScanner.close();
 		return result+"\n";
-		 */
 	}
 
 	public boolean validateDate(String date) {
